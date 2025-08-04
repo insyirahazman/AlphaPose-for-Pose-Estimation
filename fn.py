@@ -2,7 +2,13 @@ import torch
 import re
 import os
 import collections
-from torch._six import string_classes, int_classes
+import sys
+if sys.version_info[0] == 3:
+    string_classes = str
+    int_classes = (int,)
+else:
+    string_classes = basestring
+    int_classes = (int, long)
 import cv2
 from opt import opt
 from tqdm import tqdm

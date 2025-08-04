@@ -4,6 +4,7 @@ import torch.utils.data
 import torch.utils.data.distributed
 import torch.nn.functional as F
 import numpy as np
+import os
 from SPPE.src.utils.img import flip, shuffleLR
 from SPPE.src.utils.eval import getPrediction
 from SPPE.src.models.FastPose import createModel
@@ -11,6 +12,9 @@ from SPPE.src.models.FastPose import createModel
 import visdom
 import time
 import sys
+
+# Get the directory of the main project (two levels up from this file)
+MAIN_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 import torch._utils
 try:
@@ -29,9 +33,9 @@ class InferenNet(nn.Module):
         super(InferenNet, self).__init__()
 
         model = createModel().cuda()
-        print('Loading pose model from {}'.format('./models/sppe/duc_se.pth'))
+        print('Loading pose model from {}'.format(os.path.join(MAIN_DIR, 'models/sppe/duc_se.pth')))
         sys.stdout.flush()
-        model.load_state_dict(torch.load('./models/sppe/duc_se.pth'))
+        model.load_state_dict(torch.load(os.path.join(MAIN_DIR, 'models/sppe/duc_se.pth')))
         model.eval()
         self.pyranet = model
 
@@ -57,8 +61,8 @@ class InferenNet_fast(nn.Module):
         super(InferenNet_fast, self).__init__()
 
         model = createModel().cuda()
-        print('Loading pose model from {}'.format('./models/sppe/duc_se.pth'))
-        model.load_state_dict(torch.load('./models/sppe/duc_se.pth'))
+        print('Loading pose model from {}'.format(os.path.join(MAIN_DIR, 'models/sppe/duc_se.pth')))
+        model.load_state_dict(torch.load(os.path.join(MAIN_DIR, 'models/sppe/duc_se.pth')))
         model.eval()
         self.pyranet = model
 
