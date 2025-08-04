@@ -25,7 +25,7 @@ You will need Git installed. You can download and install [Git Bash here](https:
 Once installed, open Git Bash and run:
 
 git clone https://github.com/your-username/AlphaPose-CPU.git
-cd AlphaPose-CPU
+<br>cd AlphaPose-CPU
 
 ### 2. Install Python Dependencies
 
