@@ -1,8 +1,30 @@
-## AlphaPose
-[AlphaPose](http://www.mvig.org/research/alphapose.html) is an accurate multi-person pose estimator, which is the **first open-source system that achieves 70+ mAP (72.3 mAP) on COCO dataset and 80+ mAP (82.1 mAP) on MPII dataset.** 
-To match poses that correspond to the same person across frames, we also provide an efficient online pose tracker called Pose Flow. It is the **first open-source online pose tracker that achieves both 60+ mAP (66.5 mAP) and 50+ MOTA (58.3 MOTA) on PoseTrack Challenge dataset.**
+# AlphaPose for Pose Estimation (CPU Version)
 
-AlphaPose supports both Linux and **Windows!**
+This repository updates and adjusts the existing [AlphaPose](https://github.com/MVIG-SJTU/AlphaPose) implementation to ensure it can run smoothly on **CPU-only machines**. This adaptation is useful for researchers or students who do not have access to an NVIDIA GPU, but still want to experiment with human pose estimation using AlphaPose.
+
+## 💡 Overview
+
+AlphaPose is an accurate multi-person pose estimator that achieves state-of-the-art performance on human pose tracking and detection tasks. This version has been tailored to:
+- Remove or bypass CUDA dependencies.
+- Run on systems without an NVIDIA GPU.
+- Be suitable for testing, learning, and small-scale CPU-based applications.
+
+## 🛠️ Features
+
+- ✅ Multi-person pose estimation
+- ✅ Runs on **CPU-only** environment
+- ✅ Uses pre-trained models from original AlphaPose
+- ⚠️ Slower inference compared to GPU-based processing
+
+## 🚀 Getting Started
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/your-username/AlphaPose-CPU.git
+cd AlphaPose-CPU
+
+### 2. Install Dependencies
 
 ## Contributors
 Pytorch version of AlphaPose is developed and maintained by [Jiefeng Li](http://jeff-leaf.site/), [Hao-Shu Fang](https://fang-haoshu.github.io/), [Yuliang Xiu](http://xiuyuliang.cn) and [Cewu Lu](http://www.mvig.org/). 
