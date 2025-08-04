@@ -2,9 +2,15 @@ from __future__ import division
 
 import torch 
 import random
+import sys
+import os
 
 import numpy as np
 import cv2
+
+# Add the parent directory to path to import opt
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from opt import opt
 
 def confidence_filter(result, confidence):
     conf_mask = (result[:,:,4] > confidence).float().unsqueeze(2)
@@ -65,8 +71,11 @@ def bbox_iou(box1, box2):
     inter_rect_y2 =  torch.min(b1_y2, b2_y2)
     
     #Intersection area
-    
-    inter_area = torch.max(inter_rect_x2 - inter_rect_x1 + 1,torch.zeros(inter_rect_x2.shape).cuda())*torch.max(inter_rect_y2 - inter_rect_y1 + 1, torch.zeros(inter_rect_x2.shape).cuda())
+    if opt.cpu:
+        device = torch.device('cpu')
+    else:
+        device = inter_rect_x2.device
+    inter_area = torch.max(inter_rect_x2 - inter_rect_x1 + 1,torch.zeros(inter_rect_x2.shape).to(device))*torch.max(inter_rect_y2 - inter_rect_y1 + 1, torch.zeros(inter_rect_x2.shape).to(device))
     
     #Union Area
     b1_area = (b1_x2 - b1_x1 + 1)*(b1_y2 - b1_y1 + 1)

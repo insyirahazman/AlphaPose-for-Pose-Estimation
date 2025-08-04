@@ -16,6 +16,10 @@ import sys
 # Get the directory of the main project (two levels up from this file)
 MAIN_DIR = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Import opt to check for CPU flag
+sys.path.append(MAIN_DIR)
+from opt import opt
+
 import torch._utils
 try:
     torch._utils._rebuild_tensor_v2
@@ -32,10 +36,12 @@ class InferenNet(nn.Module):
     def __init__(self, kernel_size, dataset):
         super(InferenNet, self).__init__()
 
-        model = createModel().cuda()
+        model = createModel()
+        if not opt.cpu:
+            model = model.cuda()
         print('Loading pose model from {}'.format(os.path.join(MAIN_DIR, 'models/sppe/duc_se.pth')))
         sys.stdout.flush()
-        model.load_state_dict(torch.load(os.path.join(MAIN_DIR, 'models/sppe/duc_se.pth')))
+        model.load_state_dict(torch.load(os.path.join(MAIN_DIR, 'models/sppe/duc_se.pth'), map_location='cpu' if opt.cpu else None))
         model.eval()
         self.pyranet = model
 
@@ -60,9 +66,11 @@ class InferenNet_fast(nn.Module):
     def __init__(self, kernel_size, dataset):
         super(InferenNet_fast, self).__init__()
 
-        model = createModel().cuda()
+        model = createModel()
+        if not opt.cpu:
+            model = model.cuda()
         print('Loading pose model from {}'.format(os.path.join(MAIN_DIR, 'models/sppe/duc_se.pth')))
-        model.load_state_dict(torch.load(os.path.join(MAIN_DIR, 'models/sppe/duc_se.pth')))
+        model.load_state_dict(torch.load(os.path.join(MAIN_DIR, 'models/sppe/duc_se.pth'), map_location='cpu' if opt.cpu else None))
         model.eval()
         self.pyranet = model
 

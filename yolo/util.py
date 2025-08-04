@@ -8,6 +8,13 @@ from torch.autograd import Variable
 import numpy as np
 import cv2 
 import matplotlib.pyplot as plt
+import sys
+import os
+
+# Add the parent directory to path to import opt
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from opt import opt
+
 try:
     from bbox import bbox_iou
 except ImportError:
@@ -56,7 +63,7 @@ def predict_transform(prediction, inp_dim, anchors, num_classes, CUDA = True):
     x_offset = torch.FloatTensor(a).view(-1,1)
     y_offset = torch.FloatTensor(b).view(-1,1)
     
-    if CUDA:
+    if CUDA and not opt.cpu:
         x_offset = x_offset.cuda()
         y_offset = y_offset.cuda()
     
@@ -67,7 +74,7 @@ def predict_transform(prediction, inp_dim, anchors, num_classes, CUDA = True):
     #log space transform height and the width
     anchors = torch.FloatTensor(anchors)
     
-    if CUDA:
+    if CUDA and not opt.cpu:
         anchors = anchors.cuda()
     
     anchors = anchors.repeat(grid_size*grid_size, 1).unsqueeze(0)
@@ -250,9 +257,12 @@ def predict_transform_half(prediction, inp_dim, anchors, num_classes, CUDA = Tru
     x_offset = torch.FloatTensor(a).view(-1,1)
     y_offset = torch.FloatTensor(b).view(-1,1)
     
-    if CUDA:
+    if CUDA and not opt.cpu:
         x_offset = x_offset.cuda().half()
         y_offset = y_offset.cuda().half()
+    elif not CUDA:
+        x_offset = x_offset.half()
+        y_offset = y_offset.half()
     
     x_y_offset = torch.cat((x_offset, y_offset), 1).repeat(1,num_anchors).view(-1,2).unsqueeze(0)
     
@@ -261,7 +271,7 @@ def predict_transform_half(prediction, inp_dim, anchors, num_classes, CUDA = Tru
     #log space transform height and the width
     anchors = torch.HalfTensor(anchors)
     
-    if CUDA:
+    if CUDA and not opt.cpu:
         anchors = anchors.cuda()
     
     anchors = anchors.repeat(grid_size*grid_size, 1).unsqueeze(0)
