@@ -29,6 +29,8 @@ git clone https://github.com/your-username/AlphaPose-CPU.git
 
 ### 2. Install Python Dependencies
 
+pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+
 ## Contributors
 Pytorch version of AlphaPose is developed and maintained by [Jiefeng Li](http://jeff-leaf.site/), [Hao-Shu Fang](https://fang-haoshu.github.io/), [Yuliang Xiu](http://xiuyuliang.cn) and [Cewu Lu](http://www.mvig.org/). 
 
