@@ -20,11 +20,15 @@ AlphaPose is an accurate multi-person pose estimator that achieves state-of-the-
 
 ### 1. Clone the Repository
 
-```bash
+You will need Git installed. You can download and install [Git Bash here](https://git-scm.com/downloads) if you haven't already.
+
+Once installed, open Git Bash and run:
+
+``bash
 git clone https://github.com/your-username/AlphaPose-CPU.git
 cd AlphaPose-CPU
 
-### 2. Install Dependencies
+### 2. Install Python Dependencies
 
 ## Contributors
 Pytorch version of AlphaPose is developed and maintained by [Jiefeng Li](http://jeff-leaf.site/), [Hao-Shu Fang](https://fang-haoshu.github.io/), [Yuliang Xiu](http://xiuyuliang.cn) and [Cewu Lu](http://www.mvig.org/). 
