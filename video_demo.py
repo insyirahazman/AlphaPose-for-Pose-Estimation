@@ -132,4 +132,5 @@ if __name__ == "__main__":
     writer.stop()
     final_result = writer.results()
     video_basename = ntpath.basename(videofile).split('.')[0]
-    write_json(final_result, args.outputpath, video_basename)
+    # Save JSON file in the same individual video folder
+    write_json(final_result, video_output_dir, 'alphapose-results')
