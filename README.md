@@ -34,6 +34,12 @@ pip install torch torchvision torchaudio --index-url https://download.pytorch.or
 ## Contributors
 Pytorch version of AlphaPose is developed and maintained by [Jiefeng Li](http://jeff-leaf.site/), [Hao-Shu Fang](https://fang-haoshu.github.io/), [Yuliang Xiu](http://xiuyuliang.cn) and [Cewu Lu](http://www.mvig.org/). 
 
+## References
+1. https://github.com/MVIG-SJTU/AlphaPose
+2. https://github.com/MVIG-SJTU/AlphaPose/tree/pytorch
+3. https://github.com/Amanbhandula/AlphaPose/blob/master/doc/win_install.md
+4. https://debuggercafe.com/real-time-pose-estimation-using-alphapose-pytorch-and-deep-learning/
+
 ## Citation
 Please cite these papers in your publications if it helps your research:
 
