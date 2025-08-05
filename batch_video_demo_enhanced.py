@@ -186,6 +186,10 @@ def main():
                        help='Directory to save processed videos (overrides config)')
     parser.add_argument('--dry_run', action='store_true',
                        help='Show what would be processed without actually processing')
+    parser.add_argument('--cpu', action='store_true',
+                       help='Force CPU processing (overrides config)')
+    parser.add_argument('--profile', action='store_true',
+                       help='Enable detailed profiling information during processing')
     
     args = parser.parse_args()
     
@@ -208,7 +212,7 @@ def main():
             'save_video': True,
             'vis_fast': False,
             'save_img': False,
-            'cpu': False,
+            'cpu': True,  # Default to CPU for better compatibility
             'resume': True,
             'extensions': ['*.mp4', '*.avi', '*.mov', '*.mkv'],
             'inp_dim': '608',
@@ -221,6 +225,10 @@ def main():
         settings['input_dir'] = args.input_dir
     if args.output_dir:
         settings['output_dir'] = args.output_dir
+    if args.cpu:
+        settings['cpu'] = True
+    if args.profile:
+        settings['profile'] = True
     
     # Convert relative paths to absolute
     settings['input_dir'] = os.path.abspath(settings['input_dir'])
@@ -228,7 +236,7 @@ def main():
     
     # Validate input directory
     if not os.path.exists(settings['input_dir']):
-        print(f"❌ Input directory does not exist: {settings['input_dir']}")
+        print(f"ERROR: Input directory does not exist: {settings['input_dir']}")
         return
     
     # Get all video files
@@ -236,7 +244,7 @@ def main():
     video_files = get_video_files(settings['input_dir'], settings['extensions'])
     
     if not video_files:
-        print(f"❌ No video files found in {settings['input_dir']}")
+        print(f"ERROR: No video files found in {settings['input_dir']}")
         print(f"Searched for extensions: {settings['extensions']}")
         return
     
@@ -271,7 +279,7 @@ def main():
     print(f"  Resume: {settings['resume']}")
     
     if args.dry_run:
-        print("\n🔍 DRY RUN - No videos will be processed")
+        print("\nDRY RUN - No videos will be processed")
         return
     
     # Confirm before processing
@@ -286,24 +294,32 @@ def main():
     failed = 0
     skipped = 0
     
+    print(f"\n{'='*80}")
+    print("STARTING BATCH PROCESSING")
+    print(f"{'='*80}")
+    print(f"Total videos to process: {len(video_files)}")
+    print(f"{'='*80}")
+    
     total_start_time = time.time()
     
     for i, video_path in enumerate(video_files, 1):
-        print(f"\n🎬 Processing video {i}/{len(video_files)}")
+        print(f"\n[PROGRESS: {i}/{len(video_files)}] ({i/len(video_files)*100:.1f}% complete)")
         
         # Check if already processed (resume functionality)
         if settings['resume'] and check_already_processed(video_path, settings['output_dir']):
             video_name = Path(video_path).stem
-            print(f"⏭️  Skipping {video_name} (already processed)")
+            print(f"SKIPPING: {video_name} (already processed)")
             skipped += 1
             continue
         
         # Process the video
         if process_single_video(video_path, settings['output_dir'], settings):
             successful += 1
+            print(f"\n[SUCCESS] Completed {successful}/{len(video_files)} videos")
         else:
             failed += 1
-            print(f"⚠️  Failed to process {os.path.basename(video_path)}")
+            print(f"\n[FAILED] {failed} failures so far")
+            print(f"ERROR: Failed to process {os.path.basename(video_path)}")
             
             # Ask if user wants to continue after failure
             if i < len(video_files):
@@ -311,6 +327,23 @@ def main():
                 if response.lower() in ['n', 'no']:
                     print("Processing stopped by user.")
                     break
+        
+        # Show current progress summary
+        elapsed_time = time.time() - total_start_time
+        processed = successful + failed
+        remaining = len(video_files) - i
+        
+        if processed > 0:
+            avg_time_per_video = elapsed_time / processed
+            estimated_remaining_time = avg_time_per_video * remaining
+            
+            print(f"\n[PROGRESS UPDATE]")
+            print(f"  Processed: {processed}/{len(video_files)} ({processed/len(video_files)*100:.1f}%)")
+            print(f"  Success: {successful} | Failed: {failed} | Skipped: {skipped}")
+            print(f"  Time elapsed: {format_time(elapsed_time)}")
+            print(f"  Estimated remaining: {format_time(estimated_remaining_time)}")
+        
+        print(f"{'='*80}")
     
     total_end_time = time.time()
     
@@ -326,7 +359,7 @@ def main():
     print(f"Output directory: {settings['output_dir']}")
     
     if successful > 0:
-        print(f"\n✅ Batch processing completed!")
+        print(f"\nSUCCESS: Batch processing completed!")
         print(f"Check your results in: {settings['output_dir']}")
     
     print(f"{'='*80}")

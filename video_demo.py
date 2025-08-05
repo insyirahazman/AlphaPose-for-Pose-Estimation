@@ -25,14 +25,25 @@ from pPose_nms import pose_nms, write_json
 args = opt
 args.dataset = 'coco'
 if not args.sp:
-    torch.multiprocessing.set_start_method('forkserver', force=True)
+    # Use platform-appropriate multiprocessing method
+    import platform
+    if platform.system() == 'Windows':
+        torch.multiprocessing.set_start_method('spawn', force=True)
+    else:
+        torch.multiprocessing.set_start_method('forkserver', force=True)
     torch.multiprocessing.set_sharing_strategy('file_system')
 
 if __name__ == "__main__":
     videofile = args.video
     mode = args.mode
     if not os.path.exists(args.outputpath):
-        os.mkdir(args.outputpath)
+        os.makedirs(args.outputpath, exist_ok=True)
+    
+    # Create a folder for this video based on video filename
+    video_basename = ntpath.basename(videofile).split('.')[0]
+    video_output_dir = os.path.join(args.outputpath, video_basename)
+    if not os.path.exists(video_output_dir):
+        os.makedirs(video_output_dir, exist_ok=True)
     
     if not len(videofile):
         raise IOError('Error: must contain --video')
@@ -64,8 +75,8 @@ if __name__ == "__main__":
     }
 
     # Data writer
-    save_path = os.path.join(args.outputpath, 'AlphaPose_'+ntpath.basename(videofile).split('.')[0]+'.avi')
-    writer = DataWriter(args.save_video, save_path, cv2.VideoWriter_fourcc(*'XVID'), fps, frameSize).start()
+    save_path = os.path.join(video_output_dir, 'alphapose_output.mp4')
+    writer = DataWriter(args.save_video, save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, frameSize).start()
 
     im_names_desc =  tqdm(range(data_loader.length()))
     batchSize = args.posebatch

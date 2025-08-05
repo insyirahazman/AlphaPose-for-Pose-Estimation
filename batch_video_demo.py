@@ -59,16 +59,16 @@ def process_single_video(video_path, output_dir, additional_args=None):
         end_time = time.time()
         
         if result.returncode == 0:
-            print(f"✅ Successfully processed {video_name} in {end_time - start_time:.2f} seconds")
+            print(f"SUCCESS: Processed {video_name} in {end_time - start_time:.2f} seconds")
             print("STDOUT:", result.stdout[-500:] if len(result.stdout) > 500 else result.stdout)
         else:
-            print(f"❌ Failed to process {video_name}")
+            print(f"FAILED: Could not process {video_name}")
             print("STDERR:", result.stderr)
             print("STDOUT:", result.stdout)
             return False
             
     except Exception as e:
-        print(f"❌ Error processing {video_name}: {str(e)}")
+        print(f"ERROR: Exception while processing {video_name}: {str(e)}")
         return False
     
     return True
@@ -105,7 +105,7 @@ def main():
     
     # Validate directories
     if not os.path.exists(args.input_dir):
-        print(f"❌ Input directory does not exist: {args.input_dir}")
+        print(f"ERROR: Input directory does not exist: {args.input_dir}")
         return
     
     # Get all video files
@@ -113,7 +113,7 @@ def main():
     video_files = get_video_files(args.input_dir, args.extensions)
     
     if not video_files:
-        print(f"❌ No video files found in {args.input_dir}")
+        print(f"ERROR: No video files found in {args.input_dir}")
         print(f"Searched for extensions: {args.extensions}")
         return
     
@@ -145,7 +145,7 @@ def main():
     total_start_time = time.time()
     
     for i, video_path in enumerate(video_files, 1):
-        print(f"\n🎬 Processing video {i}/{len(video_files)}")
+        print(f"\n[VIDEO {i}/{len(video_files)}] Processing...")
         
         # Check if already processed (resume functionality)
         if args.resume:
@@ -154,7 +154,7 @@ def main():
             expected_json = os.path.join(args.output_dir, f'{video_name}.json')
             
             if os.path.exists(expected_output) and os.path.exists(expected_json):
-                print(f"⏭️  Skipping {video_name} (already processed)")
+                print(f"SKIPPING: {video_name} (already processed)")
                 skipped += 1
                 continue
         
@@ -163,7 +163,7 @@ def main():
             successful += 1
         else:
             failed += 1
-            print(f"⚠️  Failed to process {os.path.basename(video_path)}")
+            print(f"ERROR: Failed to process {os.path.basename(video_path)}")
     
     total_end_time = time.time()
     
