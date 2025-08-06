@@ -14,6 +14,7 @@ import argparse
 import time
 import configparser
 from typing import List, Dict, Any
+from tqdm import tqdm
 
 def load_config(config_file: str) -> Dict[str, Any]:
     """Load configuration from INI file"""
@@ -109,12 +110,30 @@ def process_single_video(video_path: str, output_dir: str, settings: Dict[str, A
     # Check if folder already exists and what's in it
     if os.path.exists(video_output_dir):
         existing_files = os.listdir(video_output_dir)
-        print(f"Existing folder found with files: {existing_files}")
+        print(f"Existing folder found with {len(existing_files)} files: {existing_files}")
         
-        # Check if this is already processed
-        if check_already_processed(video_path, output_dir):
-            print(f"Video already processed - files exist in: {video_output_dir}")
+        # Detailed check of what exists
+        expected_output_1 = os.path.join(video_output_dir, 'alphapose_output.mp4')
+        expected_output_2 = os.path.join(video_output_dir, f'AlphaPose_{video_name}.mp4')
+        expected_json = os.path.join(video_output_dir, 'alphapose-results.json')
+        
+        video_exists = os.path.exists(expected_output_1) or os.path.exists(expected_output_2)
+        json_exists = os.path.exists(expected_json)
+        
+        print(f"File status check:")
+        print(f"  Video file: {'EXISTS' if video_exists else 'MISSING'}")
+        print(f"  JSON file:  {'EXISTS' if json_exists else 'MISSING'}")
+        
+        # Check if this is already completely processed
+        if video_exists and json_exists:
+            print(f"Video already completely processed - files exist in: {video_output_dir}")
             return True
+        elif video_exists or json_exists:
+            print(f"Incomplete processing detected - will reprocess to ensure both files exist")
+        else:
+            print(f"No output files found - will process from scratch")
+    else:
+        print(f"No existing output folder - will create and process from scratch")
     
     # Estimate processing time
     estimated_time = estimate_processing_time(video_path)
@@ -160,9 +179,15 @@ def process_single_video(video_path: str, output_dir: str, settings: Dict[str, A
     # Execute the command
     start_time = time.time()
     try:
+        # Set environment variables for CPU-only processing to avoid CUDA issues
+        env = os.environ.copy()
+        env['CUDA_VISIBLE_DEVICES'] = ''
+        env['OMP_NUM_THREADS'] = '1'  # Limit OpenMP threads
+        env['MKL_NUM_THREADS'] = '1'  # Limit MKL threads
+        
         # Run with real-time output
         process = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, 
-                                 universal_newlines=True, cwd=os.path.dirname(__file__))
+                                 universal_newlines=True, cwd=os.path.dirname(__file__), env=env)
         
         # Print output in real-time
         for line in process.stdout:
@@ -188,22 +213,32 @@ def check_already_processed(video_path: str, output_dir: str) -> bool:
     video_name = Path(video_path).stem
     video_output_dir = os.path.join(output_dir, video_name)
     
-    # Check for files in the individual video folder
-    # The actual output video is named AlphaPose_[video_name].mp4
-    expected_output_1 = os.path.join(video_output_dir, 'alphapose_output.mp4')  # New format
-    expected_output_2 = os.path.join(video_output_dir, f'AlphaPose_{video_name}.mp4')  # Existing format
-    expected_json = os.path.join(video_output_dir, 'alphapose-results.json')
-    
     # Check if folder exists and contains the required files
     if not os.path.exists(video_output_dir):
         return False
     
-    # Check for JSON file (required)
-    if not os.path.exists(expected_json):
-        return False
+    # Check for files in the individual video folder
+    expected_output_1 = os.path.join(video_output_dir, 'alphapose_output.mp4')  # New format
+    expected_output_2 = os.path.join(video_output_dir, f'AlphaPose_{video_name}.mp4')  # Existing format
+    expected_json = os.path.join(video_output_dir, 'alphapose-results.json')
     
-    # Check for either video format (old or new)
-    return os.path.exists(expected_output_1) or os.path.exists(expected_output_2)
+    # Check what files exist
+    video_exists = os.path.exists(expected_output_1) or os.path.exists(expected_output_2)
+    json_exists = os.path.exists(expected_json)
+    
+    # Print detailed status
+    if video_exists and json_exists:
+        print(f"Complete: Both video and JSON files exist for {video_name}")
+        return True
+    elif video_exists and not json_exists:
+        print(f"Incomplete: Video exists but JSON missing for {video_name}")
+        return False
+    elif not video_exists and json_exists:
+        print(f"Incomplete: JSON exists but video missing for {video_name}")
+        return False
+    else:
+        print(f"Missing: No output files found for {video_name}")
+        return False
 
 def main():
     parser = argparse.ArgumentParser(description='Batch process videos with AlphaPose')
@@ -235,18 +270,18 @@ def main():
         settings = {
             'input_dir': '../PD_rawvideos/raw_videos',
             'output_dir': '../outputs/batch_results',
-            'mode': 'normal',
+            'mode': 'fast',  # Use fast mode for better performance
             'confidence': 0.05,
             'nms_threshold': 0.6,
-            'detbatch': 1,
-            'posebatch': 80,
+            'detbatch': 1,  # Keep detection batch small for memory
+            'posebatch': 1,  # Reduce pose batch for memory constraints
             'save_video': True,
-            'vis_fast': False,
+            'vis_fast': True,  # Default to fast visualization for better performance
             'save_img': False,
             'cpu': True,  # Default to CPU for better compatibility
             'resume': True,
             'extensions': ['*.mp4', '*.avi', '*.mov', '*.mkv'],
-            'inp_dim': '608',
+            'inp_dim': '416',  # Reduced input dimensions for lower memory
             'format': 'coco',
             'profile': False
         }
@@ -282,22 +317,70 @@ def main():
         return
     
     print(f"\nFound {len(video_files)} video files:")
+    print("Checking existing output files...")
+    print(f"{'='*60}")
+    
     total_estimated_time = 0
+    already_processed_count = 0
+    incomplete_count = 0
+    missing_count = 0
+    
     for i, video in enumerate(video_files, 1):
         rel_path = os.path.relpath(video, settings['input_dir'])
         estimated = estimate_processing_time(video)
         total_estimated_time += estimated
-        status = ""
         
-        if settings['resume'] and check_already_processed(video, settings['output_dir']):
-            status = " (already processed - will skip)"
+        # Check processing status
+        video_name = Path(video).stem
+        video_output_dir = os.path.join(settings['output_dir'], video_name)
+        
+        if os.path.exists(video_output_dir):
+            # Check what files exist
+            expected_output = os.path.join(video_output_dir, 'alphapose_output.mp4')
+            expected_json = os.path.join(video_output_dir, 'alphapose-results.json')
+            
+            video_exists = os.path.exists(expected_output)
+            json_exists = os.path.exists(expected_json)
+            
+            if video_exists and json_exists:
+                status = " [COMPLETE]"
+                already_processed_count += 1
+            elif video_exists or json_exists:
+                status = " [INCOMPLETE]"
+                incomplete_count += 1
+            else:
+                status = " [MISSING]"
+                missing_count += 1
+        else:
+            status = " [MISSING]"
+            missing_count += 1
         
         print(f"  {i:2d}. {rel_path}{status}")
         if estimated > 0:
             print(f"      Estimated time: {format_time(estimated)}")
     
+    print(f"{'='*60}")
+    print(f"Status Summary:")
+    print(f"  [COMPLETE] (will skip): {already_processed_count}")
+    print(f"  [INCOMPLETE] (will reprocess): {incomplete_count}")
+    print(f"  [MISSING] (will process): {missing_count}")
+    print(f"  Total videos to process: {incomplete_count + missing_count}")
+    
+    if settings['resume']:
+        videos_to_process = incomplete_count + missing_count
+        if videos_to_process == 0:
+            print(f"\nAll videos already processed! No work needed.")
+            return
+        else:
+            print(f"\nResume mode enabled - will skip {already_processed_count} completed videos")
+    
     if total_estimated_time > 0:
-        print(f"\nTotal estimated processing time: {format_time(total_estimated_time)}")
+        # Adjust time estimate for resume mode
+        if settings['resume']:
+            estimated_time_for_remaining = total_estimated_time * (videos_to_process / len(video_files))
+            print(f"Estimated processing time for remaining videos: {format_time(estimated_time_for_remaining)}")
+        else:
+            print(f"Total estimated processing time: {format_time(total_estimated_time)}")
     
     # Show settings
     print(f"\nProcessing settings:")
@@ -335,31 +418,63 @@ def main():
     
     total_start_time = time.time()
     
-    for i, video_path in enumerate(video_files, 1):
+    # Create progress bar for batch processing
+    video_progress = tqdm(video_files, desc="Batch Processing", unit="video", 
+                         bar_format='{desc}: {percentage:3.0f}%|{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}, {rate_fmt}]')
+    
+    for i, video_path in enumerate(video_progress, 1):
+        video_name = Path(video_path).stem
+        video_progress.set_description(f"Processing: {video_name}")
+        
         print(f"\n[PROGRESS: {i}/{len(video_files)}] ({i/len(video_files)*100:.1f}% complete)")
         
         # Check if already processed (resume functionality)
         if settings['resume'] and check_already_processed(video_path, settings['output_dir']):
-            video_name = Path(video_path).stem
             print(f"SKIPPING: {video_name} (already processed)")
             skipped += 1
+            video_progress.set_postfix({"Success": successful, "Failed": failed, "Skipped": skipped})
             continue
         
         # Process the video
-        if process_single_video(video_path, settings['output_dir'], settings):
-            successful += 1
-            print(f"\n[SUCCESS] Completed {successful}/{len(video_files)} videos")
-        else:
+        try:
+            if process_single_video(video_path, settings['output_dir'], settings):
+                successful += 1
+                print(f"\n[SUCCESS] Completed {successful}/{len(video_files)} videos")
+                video_progress.set_postfix({"Success": successful, "Failed": failed, "Skipped": skipped})
+            else:
+                failed += 1
+                print(f"\n[FAILED] {failed} failures so far")
+                print(f"ERROR: Failed to process {os.path.basename(video_path)}")
+                video_progress.set_postfix({"Success": successful, "Failed": failed, "Skipped": skipped})
+                
+                # Ask if user wants to continue after failure
+                if i < len(video_files):
+                    response = input("Continue with remaining videos? (Y/n): ")
+                    if response.lower() in ['n', 'no']:
+                        print("Processing stopped by user.")
+                        break
+        except MemoryError as e:
             failed += 1
-            print(f"\n[FAILED] {failed} failures so far")
-            print(f"ERROR: Failed to process {os.path.basename(video_path)}")
+            print(f"\n[MEMORY ERROR] Failed to process {os.path.basename(video_path)}: {str(e)}")
+            print("This might be due to insufficient system memory. Try:")
+            print("1. Reducing batch sizes in configuration")
+            print("2. Processing videos one at a time")
+            print("3. Restarting the script to free memory")
+            video_progress.set_postfix({"Success": successful, "Failed": failed, "Skipped": skipped})
             
-            # Ask if user wants to continue after failure
-            if i < len(video_files):
-                response = input("Continue with remaining videos? (Y/n): ")
-                if response.lower() in ['n', 'no']:
-                    print("Processing stopped by user.")
-                    break
+            response = input("Continue with remaining videos? (Y/n): ")
+            if response.lower() in ['n', 'no']:
+                print("Processing stopped by user.")
+                break
+        except Exception as e:
+            failed += 1
+            print(f"\n[ERROR] Unexpected error processing {os.path.basename(video_path)}: {str(e)}")
+            video_progress.set_postfix({"Success": successful, "Failed": failed, "Skipped": skipped})
+            
+            response = input("Continue with remaining videos? (Y/n): ")
+            if response.lower() in ['n', 'no']:
+                print("Processing stopped by user.")
+                break
         
         # Show current progress summary
         elapsed_time = time.time() - total_start_time
@@ -377,6 +492,9 @@ def main():
             print(f"  Estimated remaining: {format_time(estimated_remaining_time)}")
         
         print(f"{'='*80}")
+    
+    # Close the progress bar
+    video_progress.close()
     
     total_end_time = time.time()
     

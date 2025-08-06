@@ -8,6 +8,10 @@ import torch.utils.data
 import numpy as np
 from opt import opt
 
+# Force CPU-only processing to avoid CUDA memory issues
+import os
+os.environ['CUDA_VISIBLE_DEVICES'] = ''
+
 from dataloader import VideoLoader, DetectionLoader, DetectionProcessor, DataWriter, Mscoco
 from yolo.util import write_results, dynamic_write_results
 from SPPE.src.main_fast_inference import *
@@ -133,4 +137,4 @@ if __name__ == "__main__":
     final_result = writer.results()
     video_basename = ntpath.basename(videofile).split('.')[0]
     # Save JSON file in the same individual video folder
-    write_json(final_result, video_output_dir, 'alphapose-results')
+    write_json(final_result, video_output_dir)

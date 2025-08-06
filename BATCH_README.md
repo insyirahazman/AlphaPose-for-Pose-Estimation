@@ -4,8 +4,7 @@ This directory contains scripts to process multiple video files automatically us
 
 ## Files Overview
 
-- `batch_video_demo.py` - Basic batch processing script
-- `batch_video_demo_enhanced.py` - Enhanced version with configuration file support
+- `batch_video_demo.py` - Enhanced batch processing script with configuration support and progress tracking
 - `batch_config.ini` - Configuration file for customizing processing settings
 - `run_batch_video.bat` - Windows batch script for easy execution
 - `run_batch_video.ps1` - PowerShell script for easy execution
@@ -13,20 +12,15 @@ This directory contains scripts to process multiple video files automatically us
 
 ## Quick Start
 
-### Method 1: Using the Batch Script (Recommended for Windows)
+### Method 1: Using the Batch Script (Recommended)
+```bash
+python batch_video_demo.py --input_dir rawvideos/raw_videos/PD --output_dir outputs/PD --cpu --vis_fast
+```
+
+### Method 2: Using the Windows Scripts
 1. Double-click `run_batch_video.bat` or `run_batch_video.ps1`
-2. The script will automatically process all videos in `../PD_rawvideos/raw_videos/`
-3. Results will be saved in `../outputs/batch_results/`
-
-### Method 2: Using the Enhanced Python Script
-```bash
-python batch_video_demo_enhanced.py
-```
-
-### Method 3: Using the Basic Python Script
-```bash
-python batch_video_demo.py --input_dir ../PD_rawvideos/raw_videos --output_dir ../outputs/batch_results
-```
+2. The script will automatically process all videos in the configured input directory
+3. Results will be saved in individual folders within the output directory
 
 ## Configuration
 
@@ -40,50 +34,49 @@ Edit `batch_config.ini` to customize processing settings:
 - **DETECTION_BATCH_SIZE**: Adjust based on GPU memory
 - **POSE_BATCH_SIZE**: Adjust based on GPU memory
 - **RESUME**: Skip already processed videos (True/False)
+- **FAST_VISUALIZATION**: Enable fast rendering for better performance
+- **USE_CPU**: Force CPU processing for Windows compatibility
 
 ## Command Line Options
 
-### Enhanced Script Options:
+### Batch Script Options:
 ```bash
-python batch_video_demo_enhanced.py [options]
+python batch_video_demo.py [options]
 
 Options:
   --config, -c          Configuration file path (default: batch_config.ini)
   --input_dir, -i       Input directory (overrides config)
   --output_dir, -o      Output directory (overrides config)
   --dry_run            Show what would be processed without processing
+  --cpu                Force CPU processing (overrides config)
+  --profile            Enable detailed profiling information
+  --vis_fast           Enable fast visualization for faster processing
 ```
 
-### Basic Script Options:
-```bash
-python batch_video_demo.py [options]
+## Output Structure
 
-Required:
-  --input_dir, -i       Directory containing input videos
-  --output_dir, -o      Directory to save processed videos
+The batch script creates individual folders for each video:
 
-Optional:
-  --mode               Detection mode: fast/normal/accurate (default: normal)
-  --conf               Confidence threshold (default: 0.05)
-  --nms                NMS threshold (default: 0.6)
-  --detbatch           Detection batch size (default: 1)
-  --posebatch          Pose estimation batch size (default: 80)
-  --vis_fast           Use fast visualization
-  --cpu                Use CPU instead of GPU
-  --extensions         Video file extensions to process
-  --resume             Skip already processed videos
+```
+outputs/
+├── patient_001/
+│   ├── alphapose_output.mp4        # Processed video with pose overlay
+│   └── alphapose-results.json      # Pose data in COCO format
+├── patient_002/
+│   ├── alphapose_output.mp4
+│   └── alphapose-results.json
+└── ...
 ```
 
 ## Directory Structure
 
 ```
 AlphaPose-for-PD-Detection/
-├── batch_video_demo.py              # Basic batch script
-├── batch_video_demo_enhanced.py     # Enhanced batch script
-├── batch_config.ini                 # Configuration file
+├── batch_video_demo.py             # Main batch processing script
+├── batch_config.ini                # Configuration file
 ├── run_batch_video.bat             # Windows batch script
 ├── run_batch_video.ps1             # PowerShell script
-├── video_demo.py                   # Original single video script
+├── video_demo.py                   # Single video processing script
 └── ...
 
 ../PD_rawvideos/                    # Input videos
@@ -110,12 +103,15 @@ AlphaPose-for-PD-Detection/
 ### Resume Processing
 - The script can resume interrupted processing
 - It skips videos that have already been processed
-- Checks for both video output (.avi) and pose data (.json)
+- Checks for both video output (.mp4) and pose data (.json) in individual folders
+- Compatible with both old format (AlphaPose_[video_name].mp4) and new format (alphapose_output.mp4)
 
 ### Progress Tracking
-- Shows progress for each video
+- Visual progress bar showing overall batch processing progress
+- Shows current video being processed
+- Real-time statistics (Success/Failed/Skipped counts)
 - Estimates processing time based on video duration
-- Displays real-time processing output
+- Displays processing rate and estimated time remaining
 - Provides summary statistics at the end
 
 ### Error Handling
@@ -168,14 +164,16 @@ AlphaPose-for-PD-Detection/
 ### Debug Mode:
 Use the `--dry_run` flag to see what would be processed without actually processing:
 ```bash
-python batch_video_demo_enhanced.py --dry_run
+python batch_video_demo.py --dry_run
 ```
 
 ## Output Files
 
-For each processed video, you'll get:
-- `AlphaPose_[video_name].avi` - Processed video with pose overlay
-- `[video_name].json` - Raw pose estimation data in COCO format
+For each processed video, you'll get organized in individual folders:
+- `alphapose_output.mp4` - Processed video with pose overlay
+- `alphapose-results.json` - Raw pose estimation data in COCO format
+
+The script supports both old format files (AlphaPose_[video_name].mp4) and new format files for backward compatibility.
 
 The JSON files contain detailed pose keypoint data that can be used for further analysis of Parkinson's Disease symptoms.
 
