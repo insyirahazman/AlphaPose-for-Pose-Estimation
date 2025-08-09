@@ -207,10 +207,6 @@ python batch_video_demo.py --config "pd_config.ini"
 - Organize videos by patient ID and session
 
 ## 🤝 Contributors
-
-**Parkinson's Disease Detection Adaptation:**
-- **[insyirahazman](https://github.com/insyirahazman)** - PD-specific modifications and batch processing enhancements
-
 **Original AlphaPose Development:**
 - [Jiefeng Li](http://jeff-leaf.site/) - Core development
 - [Hao-Shu Fang](https://fang-haoshu.github.io/) - Core development  
@@ -231,18 +227,6 @@ python batch_video_demo.py --config "pd_config.ini"
 7. [Pose Estimation for Healthcare](https://ieeexplore.ieee.org/document/9153574)
 
 ## 🔬 Research Citation
-
-If you use this adapted version for Parkinson's Disease research, please cite:
-
-```bibtex
-@misc{alphapose-pd-2024,
-  title={AlphaPose for Parkinson's Disease Detection: CPU-Optimized Batch Processing},
-  author={Insyirah Azman},
-  year={2024},
-  howpublished={\url{https://github.com/insyirahazman/AlphaPose-for-PD-Detection}}
-}
-```
-
 **Original AlphaPose Citation:**
 ```bibtex
 @inproceedings{fang2017rmpe,
