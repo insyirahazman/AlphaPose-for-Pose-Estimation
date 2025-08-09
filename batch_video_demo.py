@@ -113,11 +113,10 @@ def process_single_video(video_path: str, output_dir: str, settings: Dict[str, A
         print(f"Existing folder found with {len(existing_files)} files: {existing_files}")
         
         # Detailed check of what exists
-        expected_output_1 = os.path.join(video_output_dir, 'alphapose_output.mp4')
-        expected_output_2 = os.path.join(video_output_dir, f'AlphaPose_{video_name}.mp4')
+        expected_output = os.path.join(video_output_dir, 'alphapose_output.mp4')
         expected_json = os.path.join(video_output_dir, 'alphapose-results.json')
         
-        video_exists = os.path.exists(expected_output_1) or os.path.exists(expected_output_2)
+        video_exists = os.path.exists(expected_output)
         json_exists = os.path.exists(expected_json)
         
         print(f"File status check:")
@@ -142,15 +141,15 @@ def process_single_video(video_path: str, output_dir: str, settings: Dict[str, A
     
     print(f"{'='*80}")
     
-    # Ensure video-specific output directory exists
-    os.makedirs(video_output_dir, exist_ok=True)
-    print(f"Using output directory: {video_output_dir}")
+    # Ensure main output directory exists (let video_demo.py create the video-specific folder)
+    os.makedirs(output_dir, exist_ok=True)
+    print(f"Using output directory: {output_dir} (video_demo.py will create subfolder: {video_name})")
     
-    # Build the command - use the video-specific directory
+    # Build the command - use the main output directory, let video_demo.py create the video subfolder
     cmd = [
         sys.executable, 'video_demo.py',
         '--video', video_path,
-        '--outdir', video_output_dir,  # Use individual video folder
+        '--outdir', output_dir,  # Use main output directory, not video-specific folder
         '--mode', settings['mode'],
         '--conf', str(settings['confidence']),
         '--nms', str(settings['nms_threshold']),
@@ -218,12 +217,11 @@ def check_already_processed(video_path: str, output_dir: str) -> bool:
         return False
     
     # Check for files in the individual video folder
-    expected_output_1 = os.path.join(video_output_dir, 'alphapose_output.mp4')  # New format
-    expected_output_2 = os.path.join(video_output_dir, f'AlphaPose_{video_name}.mp4')  # Existing format
+    expected_output = os.path.join(video_output_dir, 'alphapose_output.mp4') 
     expected_json = os.path.join(video_output_dir, 'alphapose-results.json')
     
     # Check what files exist
-    video_exists = os.path.exists(expected_output_1) or os.path.exists(expected_output_2)
+    video_exists = os.path.exists(expected_output)
     json_exists = os.path.exists(expected_json)
     
     # Print detailed status
