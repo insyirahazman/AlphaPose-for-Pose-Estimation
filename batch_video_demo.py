@@ -114,7 +114,9 @@ def process_single_video(video_path: str, output_dir: str, settings: Dict[str, A
         
         # Detailed check of what exists
         expected_output = os.path.join(video_output_dir, 'alphapose_output.mp4')
-        expected_json = os.path.join(video_output_dir, 'alphapose-results.json')
+        video_name = os.path.basename(video_output_dir)
+        json_filename = f"{video_name}.json"
+        expected_json = os.path.join(video_output_dir, json_filename)
         
         video_exists = os.path.exists(expected_output)
         json_exists = os.path.exists(expected_json)
@@ -218,7 +220,9 @@ def check_already_processed(video_path: str, output_dir: str) -> bool:
     
     # Check for files in the individual video folder
     expected_output = os.path.join(video_output_dir, 'alphapose_output.mp4') 
-    expected_json = os.path.join(video_output_dir, 'alphapose-results.json')
+    video_name = os.path.basename(video_output_dir)
+    json_filename = f"{video_name}.json"
+    expected_json = os.path.join(video_output_dir, json_filename)
     
     # Check what files exist
     video_exists = os.path.exists(expected_output)
@@ -335,7 +339,9 @@ def main():
         if os.path.exists(video_output_dir):
             # Check what files exist
             expected_output = os.path.join(video_output_dir, 'alphapose_output.mp4')
-            expected_json = os.path.join(video_output_dir, 'alphapose-results.json')
+            video_name = os.path.basename(video_output_dir)
+            json_filename = f"{video_name}.json"
+            expected_json = os.path.join(video_output_dir, json_filename)
             
             video_exists = os.path.exists(expected_output)
             json_exists = os.path.exists(expected_json)

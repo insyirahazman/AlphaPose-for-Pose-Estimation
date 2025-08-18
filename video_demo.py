@@ -44,7 +44,7 @@ if __name__ == "__main__":
         os.makedirs(args.outputpath, exist_ok=True)
     
     # Create a folder for this video based on video filename
-    video_basename = ntpath.basename(videofile).split('.')[0]
+    video_basename = os.path.splitext(os.path.basename(videofile))[0]
     video_output_dir = os.path.join(args.outputpath, video_basename)
     if not os.path.exists(video_output_dir):
         os.makedirs(video_output_dir, exist_ok=True)
@@ -137,4 +137,7 @@ if __name__ == "__main__":
     final_result = writer.results()
     video_basename = ntpath.basename(videofile).split('.')[0]
     # Save JSON file in the same individual video folder
-    write_json(final_result, video_output_dir)
+    folder_name = os.path.basename(video_output_dir)
+    video_name = os.path.splitext(os.path.basename(videofile))[0]
+    json_filename = f"{video_name}.json"
+    write_json(final_result, video_output_dir, json_filename)

@@ -21,6 +21,7 @@ AlphaPose is a state-of-the-art multi-person pose estimator. This specialized ve
 - ✅ **JSON pose data export** for further analysis
 - ✅ **Processing status tracking** (complete/incomplete/missing)
 - ✅ **Memory optimization** for large video datasets
+- ✅ **Output JSON filename matches video name** (e.g., `test_3.json`)
 - ⚠️ Slower inference compared to GPU-based processing
 
 ## 🚀 Quick Start
@@ -48,30 +49,32 @@ pip install -r requirements.txt
 ```bash
 python video_demo.py --video input_video.mp4 --outdir output_folder --cpu
 ```
+- **Output:** Results are saved in a folder named after the video (e.g., `output_folder/test_3/`). The pose data is exported as `test_3.json`.
 
 #### Batch Processing (Recommended for PD Analysis)
 ```bash
 python batch_video_demo.py --input_dir "path/to/patient/videos" --output_dir "path/to/results" --cpu --vis_fast
 ```
+- **Output:** Each video gets its own folder, and the pose data is saved as `{video_name}.json` (e.g., `test_3.json`).
 
 ## 📁 Project Structure
 
 ```
 AlphaPose-for-PD-Detection/
-├── 📄 batch_video_demo.py          # Enhanced batch processing script
-├── ⚙️ batch_config.ini             # Configuration file for batch processing
-├── 🔧 run_batch_video.bat          # Windows batch script
-├── 🔧 run_batch_video.ps1          # PowerShell script
-├── 📄 video_demo.py                # Single video processing script
-├── 📄 demo.py                      # Image processing demo
-├── 📚 BATCH_README.md              # Detailed batch processing documentation
-├── 📚 README.md                    # This file
-├── 📦 requirements.txt             # Python dependencies
-├── 📁 models/                      # Pre-trained models
-├── 📁 examples/                    # Example images and videos
-├── 📁 SPPE/                        # Single Person Pose Estimation module
-├── 📁 yolo/                        # YOLO detection module
-└── 📁 outputs/                     # Processing results
+├── batch_video_demo.py          # Enhanced batch processing script
+├── batch_config.ini             # Configuration file for batch processing
+├── run_batch_video.bat          # Windows batch script
+├── run_batch_video.ps1          # PowerShell script
+├── video_demo.py                # Single video processing script
+├── demo.py                      # Image processing demo
+├── BATCH_README.md              # Detailed batch processing documentation
+├── README.md                    # This file
+├── requirements.txt             # Python dependencies
+├── models/                      # Pre-trained models
+├── examples/                    # Example images and videos
+├── SPPE/                        # Single Person Pose Estimation module
+├── yolo/                        # YOLO detection module
+└── outputs/                     # Processing results
 ```
 
 ## 🎯 For Parkinson's Disease Research
@@ -83,19 +86,6 @@ AlphaPose-for-PD-Detection/
 4. **Run batch analysis** on all videos
 5. **Extract pose data** for gait analysis
 6. **Analyze movement patterns** for PD indicators
-
-### Output Structure
-```
-outputs/batch_results/
-├── patient_001_front/
-│   ├── alphapose_output.mp4        # Video with pose overlay
-│   └── alphapose-results.json      # Pose keypoints data
-├── patient_001_side/
-│   ├── alphapose_output.mp4
-│   └── alphapose-results.json
-├── patient_002_front/
-└── ...
-```
 
 ### Configuration for PD Analysis
 ```ini
@@ -242,6 +232,13 @@ python batch_video_demo.py --config "pd_config.ini"
   journal={arXiv preprint arXiv:1812.00324},
   year={2018}
 }
+
+@inproceedings{xiu2018poseflow,
+  author = {Xiu, Yuliang and Li, Jiefeng and Wang, Haoyu and Fang, Yinghong and Lu, Cewu},
+  title = {{Pose Flow}: Efficient Online Pose Tracking},
+  booktitle={BMVC},
+  year = {2018}
+}
 ```
 
 ## 📄 License
@@ -259,11 +256,3 @@ This project maintains the same license as the original AlphaPose project. Pleas
 ---
 
 **⭐ Star this repository if it helps your research!**
-    }
-
-    @inproceedings{xiu2018poseflow,
-      author = {Xiu, Yuliang and Li, Jiefeng and Wang, Haoyu and Fang, Yinghong and Lu, Cewu},
-      title = {{Pose Flow}: Efficient Online Pose Tracking},
-      booktitle={BMVC},
-      year = {2018}
-    }
