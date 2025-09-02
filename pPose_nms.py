@@ -343,7 +343,7 @@ def write_json(all_results, outputpath, video_basename=None, for_eval=False):
 
     # Determine the JSON filename based on video basename
     if video_basename:
-        json_filename = f'alphapose-results-{video_basename}.json'
+        json_filename = f'{video_basename}.json'
     else:
         json_filename = 'alphapose-results.json'
 

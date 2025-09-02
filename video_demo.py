@@ -79,7 +79,8 @@ if __name__ == "__main__":
     }
 
     # Data writer
-    save_path = os.path.join(video_output_dir, 'alphapose_output.mp4')
+    video_name = os.path.splitext(os.path.basename(videofile))[0]
+    save_path = os.path.join(video_output_dir, f"{video_name}.mp4")
     writer = DataWriter(args.save_video, save_path, cv2.VideoWriter_fourcc(*'mp4v'), fps, frameSize).start()
 
     im_names_desc =  tqdm(range(data_loader.length()))
@@ -139,5 +140,5 @@ if __name__ == "__main__":
     # Save JSON file in the same individual video folder
     folder_name = os.path.basename(video_output_dir)
     video_name = os.path.splitext(os.path.basename(videofile))[0]
-    json_filename = f"{video_name}.json"
+    json_filename = video_name 
     write_json(final_result, video_output_dir, json_filename)

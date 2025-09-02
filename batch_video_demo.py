@@ -113,11 +113,9 @@ def process_single_video(video_path: str, output_dir: str, settings: Dict[str, A
         print(f"Existing folder found with {len(existing_files)} files: {existing_files}")
         
         # Detailed check of what exists
-        expected_output = os.path.join(video_output_dir, 'alphapose_output.mp4')
-        video_name = os.path.basename(video_output_dir)
-        json_filename = f"{video_name}.json"
-        expected_json = os.path.join(video_output_dir, json_filename)
-        
+        expected_output = os.path.join(video_output_dir, f"{video_name}.mp4")
+        expected_json = os.path.join(video_output_dir, f"{video_name}.json")
+
         video_exists = os.path.exists(expected_output)
         json_exists = os.path.exists(expected_json)
         
@@ -219,11 +217,8 @@ def check_already_processed(video_path: str, output_dir: str) -> bool:
         return False
     
     # Check for files in the individual video folder
-    expected_output = os.path.join(video_output_dir, 'alphapose_output.mp4') 
-    video_name = os.path.basename(video_output_dir)
-    json_filename = f"{video_name}.json"
-    expected_json = os.path.join(video_output_dir, json_filename)
-    
+    expected_output = os.path.join(video_output_dir, f"{video_name}.mp4")
+    expected_json = os.path.join(video_output_dir, f"{video_name}.json")
     # Check what files exist
     video_exists = os.path.exists(expected_output)
     json_exists = os.path.exists(expected_json)
@@ -338,7 +333,7 @@ def main():
         
         if os.path.exists(video_output_dir):
             # Check what files exist
-            expected_output = os.path.join(video_output_dir, 'alphapose_output.mp4')
+            expected_output = os.path.join(video_output_dir, f"{video_name}.mp4")
             video_name = os.path.basename(video_output_dir)
             json_filename = f"{video_name}.json"
             expected_json = os.path.join(video_output_dir, json_filename)
@@ -404,7 +399,7 @@ def main():
     
     # Confirm before processing
     print(f"\nOutput directory: {settings['output_dir']}")
-    response = input("\nProceed with batch processing? (y/N): ")
+    response = input("\nProceed with batch processing? (Y/N): ")
     if response.lower() not in ['y', 'yes']:
         print("Processing cancelled.")
         return
