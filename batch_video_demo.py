@@ -13,7 +13,7 @@ from pathlib import Path
 import argparse
 import time
 import configparser
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 from tqdm import tqdm
 
 def load_config(config_file: str) -> Dict[str, Any]:
@@ -83,6 +83,69 @@ def estimate_processing_time(video_path: str) -> float:
         return duration * 3  # Conservative estimate
     except:
         return 0
+
+def extract_frames(video_path: str, output_root: str, stride: int = 1, overwrite: bool = False, limit: Optional[int] = None, img_ext: str = 'jpg') -> int:
+    """Extract frames from a video.
+
+    Args:
+        video_path: Path to video file.
+        output_root: Root output directory where a subfolder '<video_name>/frames' will be created.
+        stride: Save every Nth frame (1 = all frames).
+        overwrite: If False and frames folder exists & not empty, skip extraction.
+        limit: Optional max number of frames to save (after stride filtering).
+        img_ext: 'jpg' or 'png'.
+    Returns:
+        Number of frames saved.
+    """
+    try:
+        import cv2
+    except ImportError:
+        print("OpenCV not installed. Install with: pip install opencv-python")
+        return 0
+
+    video_name = Path(video_path).stem
+    frames_dir = os.path.join(output_root, video_name, 'frames')
+    os.makedirs(frames_dir, exist_ok=True)
+
+    # Skip if already extracted
+    if not overwrite and any(Path(frames_dir).glob(f'frame_*.{img_ext}')):
+        print(f"Frames already exist for {video_name}, skipping (use --overwrite_frames to force).")
+        return 0
+
+    cap = cv2.VideoCapture(video_path)
+    if not cap.isOpened():
+        print(f"Failed to open video: {video_path}")
+        return 0
+
+    total = int(cap.get(cv2.CAP_PROP_FRAME_COUNT)) or 0
+    saved = 0
+    idx = 0
+    pbar = None
+    try:
+        from tqdm import tqdm as _tqdm
+        pbar = _tqdm(total=total, desc=f"Extracting {video_name}", unit="frame")
+    except Exception:
+        pass
+
+    while True:
+        ret, frame = cap.read()
+        if not ret:
+            break
+        if idx % stride == 0:
+            out_path = os.path.join(frames_dir, f"frame_{idx:06d}.{img_ext}")
+            cv2.imwrite(out_path, frame)
+            saved += 1
+            if limit and saved >= limit:
+                break
+        idx += 1
+        if pbar:
+            pbar.update(1)
+
+    cap.release()
+    if pbar:
+        pbar.close()
+    print(f"Saved {saved} frame(s) to {frames_dir}")
+    return saved
 
 def format_time(seconds: float) -> str:
     """Format seconds into human-readable time"""
@@ -253,6 +316,18 @@ def main():
                        help='Enable detailed profiling information during processing')
     parser.add_argument('--vis_fast', action='store_true',
                        help='Enable fast visualization for faster processing (overrides config)')
+    parser.add_argument('--extract_frames', action='store_true',
+                       help='Extract frames for each processed (or all) video')
+    parser.add_argument('--frame_stride', type=int, default=1,
+                       help='Save every Nth frame (default=1)')
+    parser.add_argument('--frame_limit', type=int, default=None,
+                       help='Optional max number of frames to save per video (after stride)')
+    parser.add_argument('--overwrite_frames', action='store_true',
+                       help='Overwrite existing extracted frames if present')
+    parser.add_argument('--extract_only', action='store_true',
+                       help='Only extract frames without running pose estimation')
+    parser.add_argument('--frame_ext', default='jpg', choices=['jpg','png'],
+                       help='Image extension for saved frames')
     
     args = parser.parse_args()
     
@@ -399,10 +474,16 @@ def main():
     
     # Confirm before processing
     print(f"\nOutput directory: {settings['output_dir']}")
-    response = input("\nProceed with batch processing? (Y/N): ")
-    if response.lower() not in ['y', 'yes']:
-        print("Processing cancelled.")
-        return
+    if not args.extract_only:
+        response = input("\nProceed with batch processing? (Y/N): ")
+        if response.lower() not in ['y', 'yes']:
+            print("Processing cancelled.")
+            return
+    else:
+        response = input("\nProceed with frame extraction only? (Y/N): ")
+        if response.lower() not in ['y','yes']:
+            print("Extraction cancelled.")
+            return
     
     # Process videos
     successful = 0
@@ -426,32 +507,48 @@ def main():
         video_progress.set_description(f"Processing: {video_name}")
         
         print(f"\n[PROGRESS: {i}/{len(video_files)}] ({i/len(video_files)*100:.1f}% complete)")
-        
+
+        # Frame extraction only mode
+        if args.extract_only:
+            extract_frames(video_path, settings['output_dir'], stride=args.frame_stride,
+                           overwrite=args.overwrite_frames, limit=args.frame_limit, img_ext=args.frame_ext)
+            skipped += 1  # treat as skipped for pose estimation
+            video_progress.set_postfix({"Frames": "extracted", "SkippedPE": skipped})
+            continue
+
         # Check if already processed (resume functionality)
         if settings['resume'] and check_already_processed(video_path, settings['output_dir']):
-            print(f"SKIPPING: {video_name} (already processed)")
+            print(f"SKIPPING POSE: {video_name} (already processed)")
             skipped += 1
+            # Still extract frames if requested
+            if args.extract_frames:
+                extract_frames(video_path, settings['output_dir'], stride=args.frame_stride,
+                               overwrite=args.overwrite_frames, limit=args.frame_limit, img_ext=args.frame_ext)
             video_progress.set_postfix({"Success": successful, "Failed": failed, "Skipped": skipped})
             continue
-        
-        # Process the video
+
+        # Process the video (pose estimation)
         try:
-            if process_single_video(video_path, settings['output_dir'], settings):
+            pose_ok = process_single_video(video_path, settings['output_dir'], settings)
+            if pose_ok:
                 successful += 1
                 print(f"\n[SUCCESS] Completed {successful}/{len(video_files)} videos")
-                video_progress.set_postfix({"Success": successful, "Failed": failed, "Skipped": skipped})
+                # Optional frame extraction after successful processing
+                if args.extract_frames:
+                    extract_frames(video_path, settings['output_dir'], stride=args.frame_stride,
+                                   overwrite=args.overwrite_frames, limit=args.frame_limit, img_ext=args.frame_ext)
             else:
                 failed += 1
                 print(f"\n[FAILED] {failed} failures so far")
                 print(f"ERROR: Failed to process {os.path.basename(video_path)}")
-                video_progress.set_postfix({"Success": successful, "Failed": failed, "Skipped": skipped})
                 
-                # Ask if user wants to continue after failure
-                if i < len(video_files):
-                    response = input("Continue with remaining videos? (Y/n): ")
-                    if response.lower() in ['n', 'no']:
-                        print("Processing stopped by user.")
-                        break
+            video_progress.set_postfix({"Success": successful, "Failed": failed, "Skipped": skipped})
+
+            if not pose_ok and i < len(video_files):
+                response = input("Continue with remaining videos? (Y/n): ")
+                if response.lower() in ['n', 'no']:
+                    print("Processing stopped by user.")
+                    break
         except MemoryError as e:
             failed += 1
             print(f"\n[MEMORY ERROR] Failed to process {os.path.basename(video_path)}: {str(e)}")
@@ -460,7 +557,6 @@ def main():
             print("2. Processing videos one at a time")
             print("3. Restarting the script to free memory")
             video_progress.set_postfix({"Success": successful, "Failed": failed, "Skipped": skipped})
-            
             response = input("Continue with remaining videos? (Y/n): ")
             if response.lower() in ['n', 'no']:
                 print("Processing stopped by user.")
@@ -469,7 +565,6 @@ def main():
             failed += 1
             print(f"\n[ERROR] Unexpected error processing {os.path.basename(video_path)}: {str(e)}")
             video_progress.set_postfix({"Success": successful, "Failed": failed, "Skipped": skipped})
-            
             response = input("Continue with remaining videos? (Y/n): ")
             if response.lower() in ['n', 'no']:
                 print("Processing stopped by user.")
